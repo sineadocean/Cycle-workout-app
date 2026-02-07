@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cycle-Synced Workout Planner</title>
+<title>Workout Planner</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f172a">
@@ -68,25 +68,6 @@ button.primary{
   box-shadow:0 0 0 3px #2dd4bf22;
 }
 
-.legend{
-  margin-top:10px;
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-}
-.chip{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid var(--line);
-  background:var(--card);
-  font-size:12px;
-  color:var(--muted);
-}
-.dot{width:10px;height:10px;border-radius:999px;}
-
 .wrap{max-width:900px;margin:0 auto;}
 #calendar{padding:12px;}
 
@@ -112,24 +93,17 @@ button.primary{
   gap:10px;
   align-items:flex-start;
 }
+
 .title{
   font-weight:800;
   font-size:14px;
+  letter-spacing:.2px;
 }
+
 .sub{
   margin-top:4px;
   font-size:12px;
   color:var(--muted);
-}
-
-.badge{
-  font-size:12px;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid var(--line);
-  background:var(--card2);
-  color:var(--text);
-  white-space:nowrap;
 }
 
 .sectionTitle{
@@ -159,6 +133,7 @@ button.primary{
   flex-wrap:wrap;
   margin-top:10px;
 }
+
 .pill{
   padding:6px 10px;
   border-radius:999px;
@@ -194,34 +169,13 @@ textarea{
   margin-top:10px;
   min-height:64px;
 }
-
-.walkToggle{
-  margin-top:10px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid var(--line);
-  background:rgba(11,18,32,.35);
-  color:var(--muted);
-}
-.walkToggle input{
-  width:18px;height:18px;
-  accent-color:var(--accent);
-}
-.walkToggle .hint{
-  font-size:12px;
-  color:var(--muted);
-  opacity:.9;
-}
 </style>
 </head>
 
 <body>
 <div class="wrap">
 <header>
-  <h1>Cycle Tracker</h1>
+  <h1>Workout Planner</h1>
   <div id="todayInfo">Loading…</div>
 
   <div class="controls">
@@ -229,31 +183,13 @@ textarea{
     <button class="primary" onclick="generate()">Refresh</button>
     <button onclick="resetAll()">Reset</button>
   </div>
-
-  <!-- Daily Walk toggle (resets each day automatically) -->
-  <div class="walkToggle">
-    <input type="checkbox" id="dailyWalk">
-    <div>
-      <div><strong>Daily walk done</strong></div>
-      <div class="hint">Baseline habit — not part of training decisions.</div>
-    </div>
-  </div>
-
-  <div class="legend">
-    <span class="chip"><span class="dot" style="background:var(--menstrual)"></span>Menstrual</span>
-    <span class="chip"><span class="dot" style="background:var(--follicular)"></span>Follicular</span>
-    <span class="chip"><span class="dot" style="background:var(--ovulation)"></span>Ovulation</span>
-    <span class="chip"><span class="dot" style="background:var(--early)"></span>Early luteal</span>
-    <span class="chip"><span class="dot" style="background:var(--late)"></span>Late luteal</span>
-    <span class="chip"><span class="dot" style="background:var(--accent)"></span>Today</span>
-  </div>
 </header>
 
 <div id="calendar"></div>
 </div>
 
 <script>
-/** ====== Phase setup (your Stardust-aligned lengths) ======
+/** Phase setup (your Stardust-aligned lengths)
   Menstrual: 1–6
   Follicular: 7–9
   Ovulation: 10–14
@@ -261,41 +197,49 @@ textarea{
   Late luteal: 22–28
 */
 const phases = [
-  {name:'Menstrual', start:1, end:6,  color:'var(--menstrual)',
+  {
+    name:'Menstrual', start:1, end:6, color:'var(--menstrual)',
     allowed:['Pilates','Walk (flat)'],
-    avoid:['Weights','Incline treadmill','Running','Goblet squat','Leg curl']
+    avoid:['Weights','Incline treadmill']
   },
-  {name:'Follicular', start:7, end:9,  color:'var(--follicular)',
+  {
+    name:'Follicular', start:7, end:9, color:'var(--follicular)',
     allowed:['Weights','Incline treadmill'],
-    avoid:['Pilates','Running','Goblet squat','Leg curl']
+    avoid:['Pilates']
   },
-  {name:'Ovulation', start:10, end:14, color:'var(--ovulation)',
+  {
+    name:'Ovulation', start:10, end:14, color:'var(--ovulation)',
     allowed:['Weights','Incline treadmill','Pilates'],
-    avoid:['Running','Goblet squat','Leg curl']
+    avoid:[]
   },
-  {name:'Early luteal', start:15, end:21, color:'var(--early)',
+  {
+    name:'Early luteal', start:15, end:21, color:'var(--early)',
     allowed:['Weights','Incline treadmill'],
-    avoid:['Pilates','Running','Goblet squat','Leg curl']
+    avoid:['Pilates']
   },
-  {name:'Late luteal', start:22, end:28, color:'var(--late)',
+  {
+    name:'Late luteal', start:22, end:28, color:'var(--late)',
     allowed:['Pilates','Incline treadmill'],
-    avoid:['Weights','Running','Goblet squat','Leg curl']
+    avoid:['Weights']
   }
 ];
 
-/** Weekly constraints */
+/** Weekly constraints
+  Tue = ballet (fixed)
+  Thu = home-only (fixed)
+*/
 const weekly = {
-  0:'Flexible',           // Sun
-  1:'Gym-safe',           // Mon (safe bet gym day)
-  2:'Ballet',             // Tue
-  3:'Flexible',           // Wed
-  4:'Home-only (late)',   // Thu
-  5:'Flexible',           // Fri
-  6:'Flexible'            // Sat
+  0:'Flexible',
+  1:'Flexible',
+  2:'Ballet',
+  3:'Flexible',
+  4:'Home-only (late)',
+  5:'Flexible',
+  6:'Flexible'
 };
 
-const LS_DATE  = 'cycleStart_local_v3';
-const LS_STATE = 'cycleState_v3';
+const LS_DATE  = 'cycleStart_local_v4';
+const LS_STATE = 'cycleState_v4';
 
 /** Local YYYY-MM-DD (no UTC drift) */
 function isoLocal(d){
@@ -314,6 +258,11 @@ function weekdayLabel(i){
   return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i];
 }
 
+function niceDateNoWeekday(d){
+  // removes weekday to avoid duplication
+  return d.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+}
+
 function getPhase(cycleDay){
   return phases.find(p => cycleDay >= p.start && cycleDay <= p.end) || phases[0];
 }
@@ -324,61 +273,47 @@ function loadState(){
 }
 function saveState(s){ localStorage.setItem(LS_STATE, JSON.stringify(s)); }
 
-/**
- * Build an informative “Plan” for the day.
- * Key: Daily walk is NOT listed here (it’s tracked globally).
- * Incline treadmill is gym-specific and phase-dependent.
- */
-function buildDayPlan(phase, dateObj){
-  const dow = dateObj.getDay();
-  const constraint = weekly[dow];
-  const rec = [];
-  const opt = [];
+/** Build gym + home recommendations (except Tue/Thu which are set) */
+function getGymHomeRecs(phase){
+  // gym rec
+  let gym = [];
+  let home = [];
 
-  if (constraint === 'Ballet'){
-    rec.push('Ballet class');
-    return { constraint, recommended: rec, optional: opt };
+  const weightsOK = phase.allowed.includes('Weights');
+  const pilatesOK = phase.allowed.includes('Pilates');
+  const inclineOK = phase.allowed.includes('Incline treadmill');
+  const inclineAvoid = phase.avoid.includes('Incline treadmill');
+
+  if (weightsOK){
+    gym.push('Weights (strength session)');
+    if (inclineOK) gym.push('Incline treadmill (short + steady, optional)');
+    // home strength template
+    home.push('At-home strength (bodyweight focus: lower + upper + core)');
+  } else {
+    // no weights phases
+    if (pilatesOK) gym.push('Pilates (studio/gym space if you want)');
+    if (inclineOK && !inclineAvoid) gym.push('Incline treadmill (steady, not HIIT)');
+    if (!pilatesOK && inclineOK && !inclineAvoid) gym.push('Treadmill walk (easy)');
+    if (!gym.length) gym.push('Gentle mobility / easy walk (no treadmill incline)');
+
+    // home option mirrors
+    if (pilatesOK) home.push('At-home Pilates');
+    else home.push('Gentle mobility / stretching');
   }
 
-  if (constraint.startsWith('Home-only')){
-    // Thursday: home-only
-    if (phase.allowed.includes('Pilates')){
-      rec.push('At-home Pilates');
-    } else if (phase.allowed.includes('Weights')){
-      rec.push('At-home strength (light bodyweight / bands if you have them)');
-      opt.push('Keep it submaximal — think “practice” not “prove”');
-    } else {
-      rec.push('Gentle mobility / stretching');
-    }
-    return { constraint, recommended: rec, optional: opt };
+  // ovulation can support either
+  if (phase.name === 'Ovulation' && pilatesOK){
+    // make home option nicer than just strength
+    home = ['At-home strength OR Pilates (choose what feels best)'];
   }
 
-  if (constraint === 'Gym-safe'){
-    // Monday: gym-safe but still phase-aware
-    if (phase.allowed.includes('Weights')) rec.push('Gym: Weights');
-    if (phase.allowed.includes('Incline treadmill')) opt.push('Optional: Incline treadmill (short + steady)');
-    if (!phase.allowed.includes('Weights') && phase.allowed.includes('Pilates')) rec.push('Pilates instead of weights');
-    return { constraint, recommended: rec, optional: opt };
+  // menstrual: emphasize no incline treadmill
+  if (phase.name === 'Menstrual'){
+    gym = ['Pilates (gentle) OR rest'];
+    home = ['At-home Pilates (gentle)'];
   }
 
-  // Flexible days
-  if (phase.allowed.includes('Weights')) rec.push('Weights (if you want / can get to gym)');
-  if (phase.allowed.includes('Pilates')) rec.push('Pilates');
-  if (phase.allowed.includes('Incline treadmill')) opt.push('Optional: Incline treadmill (gym)');
-
-  if (rec.length === 0) rec.push('Rest or gentle mobility');
-
-  return { constraint, recommended: rec, optional: opt };
-}
-
-/** Daily walk toggle: stored per local day so it resets automatically */
-function setupDailyWalkToggle(){
-  const todayKey = 'dailyWalk_' + isoLocal(new Date());
-  const box = document.getElementById('dailyWalk');
-  if (!box) return;
-
-  box.checked = localStorage.getItem(todayKey) === 'true';
-  box.onchange = (e) => localStorage.setItem(todayKey, e.target.checked ? 'true' : 'false');
+  return { gym, home };
 }
 
 function generate(){
@@ -386,7 +321,6 @@ function generate(){
   if (!startVal){
     document.getElementById('todayInfo').textContent = 'Set your cycle start date once — I’ll remember it.';
     document.getElementById('calendar').innerHTML = '';
-    setupDailyWalkToggle();
     return;
   }
 
@@ -416,12 +350,12 @@ function generate(){
       todayPhaseName = phase.name;
     }
 
-    const plan = buildDayPlan(phase, d);
+    const constraint = weekly[d.getDay()];
+    const recs = getGymHomeRecs(phase);
 
     const card = document.createElement('div');
     card.className = 'card';
     if (key === todayKey) card.classList.add('today');
-    card.dataset.dateKey = key;
 
     const bar = document.createElement('div');
     bar.className = 'bar';
@@ -430,36 +364,79 @@ function generate(){
     const inner = document.createElement('div');
     inner.className = 'inner';
 
+    // header line (weekday only once)
     const top = document.createElement('div');
     top.className = 'toprow';
     top.innerHTML = `
       <div>
-        <div class="title">Day ${cycleDay} — ${weekdayLabel(d.getDay())} • ${d.toDateString()}</div>
-        <div class="sub">${phase.name} • Constraint: ${plan.constraint}</div>
+        <div class="title">Day ${cycleDay} — ${weekdayLabel(d.getDay())} • ${niceDateNoWeekday(d)}</div>
+        <div class="sub">${phase.name}${constraint !== 'Flexible' ? ' • ' + constraint : ''}</div>
       </div>
-      <div class="badge">Plan</div>
     `;
 
+    // plan content
     const planBox = document.createElement('div');
     planBox.className = 'planBox';
-    planBox.innerHTML = `
-      <div class="sectionTitle">Recommended</div>
-      ${plan.recommended.map(x=>`<div class="planLine">• ${x}</div>`).join('')}
-      ${plan.optional.length ? `<div class="sectionTitle">Optional</div>` + plan.optional.map(x=>`<div class="planLine">• ${x}</div>`).join('') : ``}
-      <div class="kv">
-        <span class="pill">Allowed: ${phase.allowed.join(', ')}</span>
-        <span class="pill">Avoid: ${phase.avoid.join(', ')}</span>
-      </div>
-    `;
 
+    if (constraint === 'Ballet'){
+      planBox.innerHTML = `
+        <div class="sectionTitle">Set plan</div>
+        <div class="planLine">• Ballet class</div>
+        <div class="kv">
+          <span class="pill">Allowed: ${phase.allowed.join(', ')}</span>
+          <span class="pill">Avoid: ${phase.avoid.length ? phase.avoid.join(', ') : '—'}</span>
+        </div>
+      `;
+    } else if (constraint.startsWith('Home-only')){
+      // Thursday fixed home plan
+      const homeLine = phase.allowed.includes('Pilates')
+        ? 'At-home Pilates'
+        : (phase.allowed.includes('Weights') ? 'At-home strength (light bodyweight)' : 'Gentle mobility / stretching');
+      planBox.innerHTML = `
+        <div class="sectionTitle">Set plan</div>
+        <div class="planLine">• ${homeLine}</div>
+        <div class="kv">
+          <span class="pill">Allowed: ${phase.allowed.join(', ')}</span>
+          <span class="pill">Avoid: ${phase.avoid.length ? phase.avoid.join(', ') : '—'}</span>
+        </div>
+      `;
+    } else {
+      // all other days: show gym + home recommendations
+      planBox.innerHTML = `
+        <div class="sectionTitle">Gym recommendation</div>
+        ${recs.gym.map(x=>`<div class="planLine">• ${x}</div>`).join('')}
+        <div class="sectionTitle">Home recommendation</div>
+        ${recs.home.map(x=>`<div class="planLine">• ${x}</div>`).join('')}
+        <div class="kv">
+          <span class="pill">Allowed: ${phase.allowed.join(', ')}</span>
+          <span class="pill">Avoid: ${phase.avoid.length ? phase.avoid.join(', ') : '—'}</span>
+        </div>
+      `;
+    }
+
+    // tracking
     const trackTitle = document.createElement('div');
     trackTitle.className = 'sectionTitle';
     trackTitle.textContent = 'Track';
 
     const checksWrap = document.createElement('div');
 
-    // Track the recommended items (consistent)
-    const trackItems = [...new Set(plan.recommended)];
+    // Track items: ballet on Tue; home-only item on Thu; otherwise track first gym item + first home item
+    let trackItems = [];
+    if (constraint === 'Ballet'){
+      trackItems = ['Ballet class'];
+    } else if (constraint.startsWith('Home-only')){
+      trackItems = phase.allowed.includes('Pilates') ? ['At-home Pilates'] :
+                   (phase.allowed.includes('Weights') ? ['At-home strength (light bodyweight)'] : knownOr('Gentle mobility / stretching'));
+    } else {
+      // keep tracking simple and consistent
+      const gymPrimary = recs.gym[0] || 'Gym session';
+      const homePrimary = recs.home[0] || 'Home session';
+      trackItems = [gymPrimary, homePrimary];
+    }
+
+    // helper for safety
+    function knownOr(x){ return [x]; }
 
     trackItems.forEach(item=>{
       const id = `${key}__${item}`;
@@ -492,29 +469,24 @@ function generate(){
     cal.appendChild(card);
   }
 
-  // Header line
+  // header line
   const info = document.getElementById('todayInfo');
   if (todayCycleDay){
-    info.textContent = `Today — ${today.toDateString()} • Cycle Day ${todayCycleDay} (${todayPhaseName})`;
+    info.textContent = `Today — ${niceDateNoWeekday(today)} • Cycle Day ${todayCycleDay} (${todayPhaseName})`;
   } else {
-    info.textContent = `Today — ${today.toDateString()} (outside this 28-day view)`;
+    info.textContent = `Today — ${niceDateNoWeekday(today)} (outside this 28-day view)`;
   }
 
-  // Restore scroll-to-today
+  // scroll to today
   const todayEl = document.querySelector('.card.today');
   if (todayEl) {
     setTimeout(() => todayEl.scrollIntoView({behavior:'smooth', block:'start'}), 60);
   }
-
-  setupDailyWalkToggle();
 }
 
 function resetAll(){
   localStorage.removeItem(LS_DATE);
   localStorage.removeItem(LS_STATE);
-
-  // Also clear today's walk toggle key for cleanliness
-  localStorage.removeItem('dailyWalk_' + isoLocal(new Date()));
   location.reload();
 }
 
@@ -525,7 +497,6 @@ window.onload = ()=>{
     generate();
   } else {
     document.getElementById('todayInfo').textContent = 'Set your cycle start date once — I’ll remember it.';
-    setupDailyWalkToggle();
   }
 };
 </script>
