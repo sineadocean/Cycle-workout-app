@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cycle Tracker</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cycle-Synced Workout Planner</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f172a">
@@ -12,6 +12,7 @@
 :root{
   --bg:#0f172a;
   --card:#111827;
+  --card2:#0b1220;
   --text:#e5e7eb;
   --muted:#94a3b8;
   --accent:#2dd4bf;
@@ -24,6 +25,7 @@
   --late:#d1d5db;
 }
 
+*{box-sizing:border-box;}
 body{
   margin:0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto;
@@ -34,6 +36,7 @@ body{
 header{
   position:sticky;
   top:0;
+  z-index:10;
   background:#0f172aee;
   backdrop-filter:blur(8px);
   padding:14px;
@@ -41,12 +44,14 @@ header{
 }
 
 h1{margin:0;font-size:20px;}
+#todayInfo{margin-top:6px;font-size:13px;color:var(--muted);}
 
 .controls{
-  margin-top:8px;
+  margin-top:10px;
   display:flex;
   gap:8px;
   flex-wrap:wrap;
+  align-items:center;
 }
 
 input,button{
@@ -60,194 +65,469 @@ input,button{
 
 button.primary{
   border-color:var(--accent);
+  box-shadow:0 0 0 3px #2dd4bf22;
 }
 
-#todayInfo{
-  margin-top:6px;
-  font-size:13px;
+.legend{
+  margin-top:10px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:var(--card);
+  font-size:12px;
   color:var(--muted);
 }
+.dot{width:10px;height:10px;border-radius:999px;}
+
+.wrap{max-width:900px;margin:0 auto;}
+#calendar{padding:12px;}
 
 .card{
-  margin:12px;
   border-radius:16px;
   background:var(--card);
   border:1px solid var(--line);
   overflow:hidden;
+  margin:12px 0;
 }
 
 .bar{height:6px;}
-
 .inner{padding:14px;}
 
 .today{
-  box-shadow:0 0 0 3px #2dd4bf33;
+  border-color:#2dd4bf66;
+  box-shadow:0 0 0 4px #2dd4bf22;
 }
 
-label{
+.toprow{
   display:flex;
-  gap:8px;
-  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+.title{
+  font-weight:800;
+  font-size:14px;
+}
+.sub{
+  margin-top:4px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.badge{
+  font-size:12px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:var(--card2);
+  color:var(--text);
+  white-space:nowrap;
+}
+
+.sectionTitle{
+  margin:12px 0 6px;
+  font-size:12px;
+  color:var(--muted);
+  font-weight:700;
+  letter-spacing:.2px;
+  text-transform:uppercase;
+}
+
+.planBox{
+  padding:12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:rgba(11,18,32,.55);
+}
+
+.planLine{
   margin:6px 0;
+  line-height:1.35;
+}
+
+.kv{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.pill{
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:var(--card2);
+  font-size:12px;
+  color:var(--text);
+}
+
+label.track{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin:8px 0;
+  padding:10px 10px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:rgba(11,18,32,.45);
+}
+
+input[type="checkbox"]{
+  width:22px;height:22px;
+  accent-color:var(--accent);
 }
 
 textarea{
   width:100%;
-  border-radius:10px;
-  padding:10px;
+  border-radius:12px;
+  padding:12px;
   background:#020617;
   border:1px solid var(--line);
   color:var(--text);
-  margin-top:8px;
+  margin-top:10px;
+  min-height:64px;
 }
 
-small{color:var(--muted);}
+.walkToggle{
+  margin-top:10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:rgba(11,18,32,.35);
+  color:var(--muted);
+}
+.walkToggle input{
+  width:18px;height:18px;
+  accent-color:var(--accent);
+}
+.walkToggle .hint{
+  font-size:12px;
+  color:var(--muted);
+  opacity:.9;
+}
 </style>
 </head>
 
 <body>
-
+<div class="wrap">
 <header>
   <h1>Cycle Tracker</h1>
-  <div id="todayInfo"></div>
+  <div id="todayInfo">Loading…</div>
 
   <div class="controls">
-    <input type="date" id="startDate">
+    <input type="date" id="startDate" />
     <button class="primary" onclick="generate()">Refresh</button>
     <button onclick="resetAll()">Reset</button>
+  </div>
+
+  <!-- Daily Walk toggle (resets each day automatically) -->
+  <div class="walkToggle">
+    <input type="checkbox" id="dailyWalk">
+    <div>
+      <div><strong>Daily walk done</strong></div>
+      <div class="hint">Baseline habit — not part of training decisions.</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span class="chip"><span class="dot" style="background:var(--menstrual)"></span>Menstrual</span>
+    <span class="chip"><span class="dot" style="background:var(--follicular)"></span>Follicular</span>
+    <span class="chip"><span class="dot" style="background:var(--ovulation)"></span>Ovulation</span>
+    <span class="chip"><span class="dot" style="background:var(--early)"></span>Early luteal</span>
+    <span class="chip"><span class="dot" style="background:var(--late)"></span>Late luteal</span>
+    <span class="chip"><span class="dot" style="background:var(--accent)"></span>Today</span>
   </div>
 </header>
 
 <div id="calendar"></div>
+</div>
 
 <script>
-const phases=[
- {name:'Menstrual',start:1,end:6,color:'var(--menstrual)',workouts:['Pilates','Walk']},
- {name:'Follicular',start:7,end:9,color:'var(--follicular)',workouts:['Weights','Incline Walking']},
- {name:'Ovulation',start:10,end:14,color:'var(--ovulation)',workouts:['Weights','Incline Walking','Pilates']},
- {name:'Early Luteal',start:15,end:21,color:'var(--early)',workouts:['Weights','Incline Walking']},
- {name:'Late Luteal',start:22,end:28,color:'var(--late)',workouts:['Pilates','Incline Walking']}
+/** ====== Phase setup (your Stardust-aligned lengths) ======
+  Menstrual: 1–6
+  Follicular: 7–9
+  Ovulation: 10–14
+  Early luteal: 15–21
+  Late luteal: 22–28
+*/
+const phases = [
+  {name:'Menstrual', start:1, end:6,  color:'var(--menstrual)',
+    allowed:['Pilates','Walk (flat)'],
+    avoid:['Weights','Incline treadmill','Running','Goblet squat','Leg curl']
+  },
+  {name:'Follicular', start:7, end:9,  color:'var(--follicular)',
+    allowed:['Weights','Incline treadmill'],
+    avoid:['Pilates','Running','Goblet squat','Leg curl']
+  },
+  {name:'Ovulation', start:10, end:14, color:'var(--ovulation)',
+    allowed:['Weights','Incline treadmill','Pilates'],
+    avoid:['Running','Goblet squat','Leg curl']
+  },
+  {name:'Early luteal', start:15, end:21, color:'var(--early)',
+    allowed:['Weights','Incline treadmill'],
+    avoid:['Pilates','Running','Goblet squat','Leg curl']
+  },
+  {name:'Late luteal', start:22, end:28, color:'var(--late)',
+    allowed:['Pilates','Incline treadmill'],
+    avoid:['Weights','Running','Goblet squat','Leg curl']
+  }
 ];
 
-const weekly={
-1:'Gym',2:'Ballet',3:'Walk',4:'Home',5:'Flex',6:'Flex',0:'Flex'
+/** Weekly constraints */
+const weekly = {
+  0:'Flexible',           // Sun
+  1:'Gym-safe',           // Mon (safe bet gym day)
+  2:'Ballet',             // Tue
+  3:'Flexible',           // Wed
+  4:'Home-only (late)',   // Thu
+  5:'Flexible',           // Fri
+  6:'Flexible'            // Sat
 };
 
-const LS_DATE='cycleStart';
-const LS_STATE='cycleState';
+const LS_DATE  = 'cycleStart_local_v3';
+const LS_STATE = 'cycleState_v3';
 
-function iso(d){return d.toISOString().split('T')[0];}
-
-function getPhase(day){
- return phases.find(p=>day>=p.start&&day<=p.end);
+/** Local YYYY-MM-DD (no UTC drift) */
+function isoLocal(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
 
-function workoutsFor(phase,weekday){
- if(weekly[weekday]==='Ballet') return ['Ballet'];
- if(weekly[weekday]==='Walk') return ['Walk'];
- if(weekly[weekday]==='Home'){
-  let arr=[];
-  if(phase.workouts.includes('Pilates')) arr.push('Pilates');
-  arr.push('Walk');
-  return arr;
- }
- let arr=[...phase.workouts];
- if(!arr.includes('Walk')) arr.push('Walk');
- return arr;
+function parseLocalDate(yyyy_mm_dd){
+  const [y,m,d] = yyyy_mm_dd.split('-').map(Number);
+  return new Date(y, m-1, d);
 }
 
-function loadState(){return JSON.parse(localStorage.getItem(LS_STATE)||'{}');}
-function saveState(s){localStorage.setItem(LS_STATE,JSON.stringify(s));}
+function weekdayLabel(i){
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i];
+}
 
-function generate(){
- const val=document.getElementById('startDate').value;
- if(!val) return;
- localStorage.setItem(LS_DATE,val);
+function getPhase(cycleDay){
+  return phases.find(p => cycleDay >= p.start && cycleDay <= p.end) || phases[0];
+}
 
- const [y,m,d]=val.split('-').map(Number);
- const start=new Date(y,m-1,d);
- const today=new Date();
- const todayISO=iso(today);
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(LS_STATE) || '{}') || {}; }
+  catch { return {}; }
+}
+function saveState(s){ localStorage.setItem(LS_STATE, JSON.stringify(s)); }
 
- const state=loadState();
- const cal=document.getElementById('calendar');
- cal.innerHTML='';
+/**
+ * Build an informative “Plan” for the day.
+ * Key: Daily walk is NOT listed here (it’s tracked globally).
+ * Incline treadmill is gym-specific and phase-dependent.
+ */
+function buildDayPlan(phase, dateObj){
+  const dow = dateObj.getDay();
+  const constraint = weekly[dow];
+  const rec = [];
+  const opt = [];
 
- let todayDay=null,todayPhase=null;
-
- for(let i=0;i<28;i++){
-  const date=new Date(start);
-  date.setDate(date.getDate()+i);
-  const cycleDay=i+1;
-  const phase=getPhase(cycleDay);
-  const dayISO=iso(date);
-
-  if(dayISO===todayISO){
-   todayDay=cycleDay;
-   todayPhase=phase.name;
+  if (constraint === 'Ballet'){
+    rec.push('Ballet class');
+    return { constraint, recommended: rec, optional: opt };
   }
 
-  const card=document.createElement('div');
-  card.className='card';
-  if(dayISO===todayISO) card.classList.add('today');
+  if (constraint.startsWith('Home-only')){
+    // Thursday: home-only
+    if (phase.allowed.includes('Pilates')){
+      rec.push('At-home Pilates');
+    } else if (phase.allowed.includes('Weights')){
+      rec.push('At-home strength (light bodyweight / bands if you have them)');
+      opt.push('Keep it submaximal — think “practice” not “prove”');
+    } else {
+      rec.push('Gentle mobility / stretching');
+    }
+    return { constraint, recommended: rec, optional: opt };
+  }
 
-  const bar=document.createElement('div');
-  bar.className='bar';
-  bar.style.background=phase.color;
-  card.appendChild(bar);
+  if (constraint === 'Gym-safe'){
+    // Monday: gym-safe but still phase-aware
+    if (phase.allowed.includes('Weights')) rec.push('Gym: Weights');
+    if (phase.allowed.includes('Incline treadmill')) opt.push('Optional: Incline treadmill (short + steady)');
+    if (!phase.allowed.includes('Weights') && phase.allowed.includes('Pilates')) rec.push('Pilates instead of weights');
+    return { constraint, recommended: rec, optional: opt };
+  }
 
-  const inner=document.createElement('div');
-  inner.className='inner';
+  // Flexible days
+  if (phase.allowed.includes('Weights')) rec.push('Weights (if you want / can get to gym)');
+  if (phase.allowed.includes('Pilates')) rec.push('Pilates');
+  if (phase.allowed.includes('Incline treadmill')) opt.push('Optional: Incline treadmill (gym)');
 
-  inner.innerHTML=`<strong>Day ${cycleDay} — ${date.toDateString()}</strong><br>
-  <small>${phase.name}</small>`;
+  if (rec.length === 0) rec.push('Rest or gentle mobility');
 
-  const workouts=workoutsFor(phase,date.getDay());
+  return { constraint, recommended: rec, optional: opt };
+}
 
-  workouts.forEach(w=>{
-   const id=dayISO+'_'+w;
-   const row=document.createElement('label');
-   row.innerHTML=`<input type="checkbox" ${state[id]?'checked':''}> ${w}`;
-   row.querySelector('input').onchange=e=>{
-    state[id]=e.target.checked;
-    saveState(state);
-   };
-   inner.appendChild(row);
-  });
+/** Daily walk toggle: stored per local day so it resets automatically */
+function setupDailyWalkToggle(){
+  const todayKey = 'dailyWalk_' + isoLocal(new Date());
+  const box = document.getElementById('dailyWalk');
+  if (!box) return;
 
-  const note=document.createElement('textarea');
-  note.placeholder='Notes…';
-  note.value=state[dayISO+'_note']||'';
-  note.oninput=e=>{
-   state[dayISO+'_note']=e.target.value;
-   saveState(state);
-  };
-  inner.appendChild(note);
+  box.checked = localStorage.getItem(todayKey) === 'true';
+  box.onchange = (e) => localStorage.setItem(todayKey, e.target.checked ? 'true' : 'false');
+}
 
-  card.appendChild(inner);
-  cal.appendChild(card);
- }
+function generate(){
+  const startVal = document.getElementById('startDate').value;
+  if (!startVal){
+    document.getElementById('todayInfo').textContent = 'Set your cycle start date once — I’ll remember it.';
+    document.getElementById('calendar').innerHTML = '';
+    setupDailyWalkToggle();
+    return;
+  }
 
- const info=document.getElementById('todayInfo');
- info.textContent=todayDay
-  ?`Today — Cycle Day ${todayDay} (${todayPhase})`
-  :'Set cycle start date';
+  localStorage.setItem(LS_DATE, startVal);
+
+  const startDate = parseLocalDate(startVal);
+  const today = new Date();
+  const todayKey = isoLocal(today);
+
+  const state = loadState();
+  const cal = document.getElementById('calendar');
+  cal.innerHTML = '';
+
+  let todayCycleDay = null;
+  let todayPhaseName = null;
+
+  for (let i=0; i<28; i++){
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+
+    const cycleDay = i + 1;
+    const phase = getPhase(cycleDay);
+    const key = isoLocal(d);
+
+    if (key === todayKey){
+      todayCycleDay = cycleDay;
+      todayPhaseName = phase.name;
+    }
+
+    const plan = buildDayPlan(phase, d);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    if (key === todayKey) card.classList.add('today');
+    card.dataset.dateKey = key;
+
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.background = phase.color;
+
+    const inner = document.createElement('div');
+    inner.className = 'inner';
+
+    const top = document.createElement('div');
+    top.className = 'toprow';
+    top.innerHTML = `
+      <div>
+        <div class="title">Day ${cycleDay} — ${weekdayLabel(d.getDay())} • ${d.toDateString()}</div>
+        <div class="sub">${phase.name} • Constraint: ${plan.constraint}</div>
+      </div>
+      <div class="badge">Plan</div>
+    `;
+
+    const planBox = document.createElement('div');
+    planBox.className = 'planBox';
+    planBox.innerHTML = `
+      <div class="sectionTitle">Recommended</div>
+      ${plan.recommended.map(x=>`<div class="planLine">• ${x}</div>`).join('')}
+      ${plan.optional.length ? `<div class="sectionTitle">Optional</div>` + plan.optional.map(x=>`<div class="planLine">• ${x}</div>`).join('') : ``}
+      <div class="kv">
+        <span class="pill">Allowed: ${phase.allowed.join(', ')}</span>
+        <span class="pill">Avoid: ${phase.avoid.join(', ')}</span>
+      </div>
+    `;
+
+    const trackTitle = document.createElement('div');
+    trackTitle.className = 'sectionTitle';
+    trackTitle.textContent = 'Track';
+
+    const checksWrap = document.createElement('div');
+
+    // Track the recommended items (consistent)
+    const trackItems = [...new Set(plan.recommended)];
+
+    trackItems.forEach(item=>{
+      const id = `${key}__${item}`;
+      const row = document.createElement('label');
+      row.className = 'track';
+      row.innerHTML = `<input type="checkbox" ${state[id] ? 'checked' : ''}><span>${item}</span>`;
+      row.querySelector('input').onchange = (e)=>{
+        state[id] = e.target.checked;
+        saveState(state);
+      };
+      checksWrap.appendChild(row);
+    });
+
+    const note = document.createElement('textarea');
+    note.placeholder = 'Notes (energy, mood, soreness, etc.)…';
+    note.value = state[`${key}__note`] || '';
+    note.oninput = (e)=>{
+      state[`${key}__note`] = e.target.value;
+      saveState(state);
+    };
+
+    inner.appendChild(top);
+    inner.appendChild(planBox);
+    inner.appendChild(trackTitle);
+    inner.appendChild(checksWrap);
+    inner.appendChild(note);
+
+    card.appendChild(bar);
+    card.appendChild(inner);
+    cal.appendChild(card);
+  }
+
+  // Header line
+  const info = document.getElementById('todayInfo');
+  if (todayCycleDay){
+    info.textContent = `Today — ${today.toDateString()} • Cycle Day ${todayCycleDay} (${todayPhaseName})`;
+  } else {
+    info.textContent = `Today — ${today.toDateString()} (outside this 28-day view)`;
+  }
+
+  // Restore scroll-to-today
+  const todayEl = document.querySelector('.card.today');
+  if (todayEl) {
+    setTimeout(() => todayEl.scrollIntoView({behavior:'smooth', block:'start'}), 60);
+  }
+
+  setupDailyWalkToggle();
 }
 
 function resetAll(){
- localStorage.removeItem(LS_DATE);
- localStorage.removeItem(LS_STATE);
- location.reload();
+  localStorage.removeItem(LS_DATE);
+  localStorage.removeItem(LS_STATE);
+
+  // Also clear today's walk toggle key for cleanliness
+  localStorage.removeItem('dailyWalk_' + isoLocal(new Date()));
+  location.reload();
 }
 
-window.onload=()=>{
- const saved=localStorage.getItem(LS_DATE);
- if(saved){
-  document.getElementById('startDate').value=saved;
-  generate();
- }
+window.onload = ()=>{
+  const saved = localStorage.getItem(LS_DATE);
+  if (saved){
+    document.getElementById('startDate').value = saved;
+    generate();
+  } else {
+    document.getElementById('todayInfo').textContent = 'Set your cycle start date once — I’ll remember it.';
+    setupDailyWalkToggle();
+  }
 };
 </script>
-
 </body>
 </html>
